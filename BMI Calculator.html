@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حیسابکەری BMI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Noto Sans Arabic', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: backgroundShift 10s ease-in-out infinite alternate;
+            direction: rtl;
+        }
+
+        @keyframes backgroundShift {
+            0% { background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); }
+            100% { background: linear-gradient(135deg, #764ba2 0%, #f093fb 50%, #667eea 100%); }
+        }
+
+        .calculator-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            max-width: 420px;
+            width: 100%;
+            transform: translateY(0);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .calculator-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 35px 70px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.2);
+        }
+
+        .language-toggle {
+            display: flex;
+            justify-content: flex-end; /* Always on the right */
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .language-toggle {
+    /* anchor to the top-right of the calculator container so it never moves */
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    /* keep some spacing from the top of the container if needed */
+    margin-bottom: 0;
+    pointer-events: auto;
+}
+
+/* Fixed-width selector so text changes don't change layout position */
+.lang-selector {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(102, 126, 234, 0.2);
+    border-radius: 12px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4a5568;
+    backdrop-filter: blur(10px);
+    width: auto;
+
+    /* force a stable width so labels like "English" or long Arabic don't shift layout */
+    text-align: center;    /* center the label inside the fixed box */
+    box-sizing: border-box;
+    position: relative;
+}
+
+        .lang-icon {
+            font-size: 1.1rem;
+        }
+
+        .lang-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            display: none;
+            z-index: 1000;
+            overflow: hidden;
+            margin-top: 5px;
+            min-width: 160px;
+        }
+
+        .lang-dropdown.show {
+            display: block;
+            animation: dropdownSlide 0.3s ease-out;
+        }
+
+        @keyframes dropdownSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .lang-option {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .lang-option:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .lang-option.active {
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+        }
+
+        .dropdown-arrow {
+            margin-left: auto;
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .lang-selector.open .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .title {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 35px;
+            margin-top: 50px;
+            letter-spacing: -0.5px;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .input-label {
+            display: block;
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 1.05rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 1);
+        }
+
+        .input-field:hover:not(:focus) {
+            border-color: #cbd5e0;
+            transform: translateY(-0.5px);
+        }
+
+        .calculate-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 24px;
+            border-radius: 14px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .calculate-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+
+        .calculate-btn:hover::before {
+            left: 100%;
+        }
+
+        .calculate-btn:active {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .result-container {
+            margin-top: 35px;
+            padding: 30px;
+            background: rgba(248, 250, 252, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            text-align: center;
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bmi-category-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border: 2px solid transparent;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bmi-category-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, currentColor, transparent);
+            opacity: 0.6;
+        }
+
+        .bmi-category-card.underweight {
+            border-color: #3498db;
+            background: linear-gradient(135deg, rgba(235, 248, 255, 0.9) 0%, rgba(219, 234, 254, 0.9) 100%);
+            color: #3498db;
+        }
+
+        .bmi-category-card.normal {
+            border-color: #27ae60;
+            background: linear-gradient(135deg, rgba(240, 255, 244, 0.9) 0%, rgba(220, 252, 231, 0.9) 100%);
+            color: #27ae60;
+        }
+
+        .bmi-category-card.overweight {
+            border-color: #f39c12;
+            background: linear-gradient(135deg, rgba(255, 251, 235, 0.9) 0%, rgba(254, 243, 199, 0.9) 100%);
+            color: #f39c12;
+        }
+
+        .bmi-category-card.obese {
+            border-color: #e74c3c;
+            background: linear-gradient(135deg, rgba(254, 242, 242, 0.9) 0%, rgba(254, 202, 202, 0.9) 100%);
+            color: #e74c3c;
+        }
+
+        .bmi-category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .bmi-icon {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .bmi-value {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #2d3748;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            animation: countUp 1s ease-out;
+        }
+
+        @keyframes countUp {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .bmi-category {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .bmi-description {
+            color: #4a5568;
+            line-height: 1.6;
+            font-size: 1.05rem;
+        }
+
+        .underweight { color: #3498db; }
+        .normal { color: #27ae60; }
+        .overweight { color: #f39c12; }
+        .obese { color: #e74c3c; }
+
+        .info-note {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #718096;
+            font-style: italic;
+        }
+
+        @media (max-width: 480px) {
+            .calculator-container {
+                padding: 30px 20px;
+            }
+            
+            .title {
+                font-size: 1.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <div class="language-toggle">
+            <div id="langSelector" class="lang-selector">
+                <span class="lang-icon">🌐</span>
+                <span id="currentLang">کوردی سۆرانی</span>
+                <span class="dropdown-arrow">▼</span>
+            </div>
+            <div id="langDropdown" class="lang-dropdown">
+                <div class="lang-option" data-lang="ku_badini">
+                    <span>کوردی بادینی</span>
+                </div>
+                <div class="lang-option" data-lang="ku">
+                    <span>کوردی سۆرانی</span>
+                </div>
+                <div class="lang-option" data-lang="ar">
+                    <span>العربية</span>
+                </div>
+                <div class="lang-option" data-lang="en">
+                    <span>English</span>
+                </div>
+            </div>
+        </div>
+        
+        <h1 class="title" id="mainTitle">بژمێرا BMI</h1>
+        
+        <form id="bmiForm">
+            <div class="input-group">
+                <label class="input-label" for="weight" id="weightLabel">کێش (کیلۆگرام)</label>
+                <input type="number" id="weight" class="input-field" placeholder="کێشەکەت بنووسە" step="0.1" min="1" required>
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label" for="height" id="heightLabel">بەرزی (سانتیمەتر)</label>
+                <input type="number" id="height" class="input-field" placeholder="بەرزیەکەت بنووسە" step="0.1" min="1" required>
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label" for="age" id="ageLabel">تەمەن (ساڵ)</label>
+                <input type="number" id="age" class="input-field" placeholder="تەمەنەکەت بنووسە" min="1" max="120" required>
+            </div>
+            
+            <div class="input-group">
+                <label class="input-label" for="gender" id="genderLabel">ڕەگەز (نێر/مێ)</label>
+                <select id="gender" class="input-field" required>
+                    <option value="" disabled selected id="genderPlaceholder">ڕەگەزەکەت ‌هەڵبژێرە</option>
+                    <option value="male">نێر</option>
+                    <option value="female">مێ</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="calculate-btn" id="calculateBtn">حیسابکردنی BMI</button>
+        </form>
+        
+        <div id="result" class="result-container">
+            <div id="categoryCard" class="bmi-category-card">
+                <div id="bmiIcon" class="bmi-icon"></div>
+                <div id="bmiValue" class="bmi-value"></div>
+                <div id="bmiCategory" class="bmi-category"></div>
+                <div id="bmiDescription" class="bmi-description"></div>
+            </div>
+            <div id="infoNote" class="info-note"></div>
+        </div>
+    </div>
+
+    <script>
+        // Language data
+        const languages = {
+            ku: {
+                title: 'حیسابکەری پیڤەری کێشی جەستە (BMI)',
+                weightLabel: 'کێش (کیلۆگرام)',
+                heightLabel: 'بەرزی (سانتیمەتر)',
+                ageLabel: 'تەمەن (ساڵ)',
+                genderLabel: 'ڕەگەز (نێر/مێ)',
+                weightPlaceholder: 'کێشەکەت بنووسە',
+                heightPlaceholder: 'بەرزیەکەت بنووسە',
+                agePlaceholder: 'تەمەنەکەت بنووسە',
+                genderPlaceholder: 'ڕەگەزەکەت ‌هەڵبژێرە',
+                calculateBtn: 'حیسابکردنی BMI',
+                langText: 'کوردی بادینی',
+                alertText: 'تکایە هەموو خانەکان بە ژمارەی دروست پڕبکەرەوە',
+                categories: {
+                    underweight: 'کەم کێش',
+                    normal: 'کێشی تەندروست',
+                    overweight: 'زیادە کێش',
+                    obese: 'قەڵەوی'
+                },
+                descriptions: {
+                    underweight: 'ڕەنگە پێویستت بە زیادکردنی کێش هەبێت. پێشنیار دەکرێت ڕاوێژ لەگەڵ پزیشک بکەیت بۆ ڕێنمایی تایبەت.',
+                    normal: 'نایاب! کێشێکی تەندروستت هەیە. بەردەوام بە لە پاراستنی شێوازی ژیانی ئێستات لەگەڵ خۆراکی هاوسەنگ و چالاکی بەردەوام.',
+                    overweight: 'ڕەنگە سوودت لە هەندێک گۆڕانکاری لە شێوازی ژیان ببینیت. پێشنیار دەکرێت خۆراکی هاوسەنگ و ڕاهێنانی بەردەوام بکەیت.',
+                    obese: 'پێشنیار دەکرێت ڕاوێژ لەگەڵ پزیشک بکەیت بۆ ڕێنمایی و پشتگیری تایبەت لە بەڕێوەبردنی کێش.'
+                },
+                infoText: 'ئەم ئەنجامە لەژێر مامەڵەی تەمەن و ڕەگەزەوە دروست کراوە.'
+            },
+            ku_badini: {
+                title: 'بژمێرا پیڤەرێ کێشەیا جەستەی (BMI)',
+                weightLabel: 'کێش (کیلۆگرام)',
+                heightLabel: 'بلندی (سانتیمەتر)',
+                ageLabel: 'تەمەن (ساڵ)',
+                genderLabel: 'ڕەگەز (نێر/مێ)',
+                weightPlaceholder: 'کێشا خوە بنڤیسە',
+                heightPlaceholder: 'بلنداهییا خوە بنڤیسە',
+                agePlaceholder: 'تەمەنێ خوە بنڤیسە',
+                genderPlaceholder: 'رەگەزێ خوە هەلبژێرە',
+                calculateBtn: 'هەژمارتنا BMI',
+                langText: 'English',
+                alertText: 'هیڤییە هەمی خانان ب ژمارەیا دروست پڕبکە',
+                categories: {
+                    underweight: 'کێشا تە کێمە',
+                    normal: 'کێشا تە ساخلەمە',
+                    overweight: 'کێشا تە زێدەیە',
+                    obese: 'قەلەوی'
+                },
+                descriptions: {
+                    underweight: 'تو پێدڤی ب زێدەکرنا کێشا لەشێ خوەیی. پێشنیارکرییە کرییە کو ڕواێژکارییێ دگەل نۆژدارەکێ تایبەتمەند بکی بو وەرگرتنا ڕێنمایێن پێدڤی.',
+                    normal: 'نایابە! تە کێشەکا تەندروست یا هەی. بەردەوام بە لسەر پاراستنا شێوازێ ژیانا خوە یا نوکە دگەل خوارنەکا هەڤسەنگ و چالاکییەکا بەردەوام.',
+                    overweight: 'دبیت مفای ژ گوهۆڕینا شێوازێ ژیانا خوە ببینی. پێشنیارکرییە خوارنەکا هەڤسەنگ بخویی و وەرزەشەک بەردەوام بکی.',
+                    obese: 'پێشنیارکرییە کو ڕاوێژکارییێ دگەل نۆژدارەکێ تایبەتمەند بکی بۆ برێڤەبرنا کێشا خوە.'
+                },
+                infoText: 'ئەڤ ئەنجامە لدویف تەمەن و ڕەگەزی هاتییە دەستکاریکرن'
+            },
+            ar: {
+                title: 'حاسبة مؤشر كتلة الجسم (BMI)',
+                weightLabel: 'الوزن (كيلوغرام)',
+                heightLabel: 'الطول (سنتيمتر)',
+                ageLabel: 'العمر (سنة)',
+                genderLabel: 'الجنس (ذكر/أنثى)',
+                weightPlaceholder: 'أدخل وزنك',
+                heightPlaceholder: 'أدخل طولك',
+                agePlaceholder: 'أدخل عمرك',
+                genderPlaceholder: 'أدخل جنسك',
+                calculateBtn: 'احسب مؤشر كتلة الجسم',
+                langText: 'العربية',
+                alertText: 'يرجى ملء جميع الحقول بأرقام صحيحة',
+                categories: {
+                    underweight: 'نقص في الوزن',
+                    normal: 'وزن صحي',
+                    overweight: 'زيادة في الوزن',
+                    obese: 'سمنة'
+                },
+                descriptions: {
+                    underweight: 'قد تحتاج إلى زيادة الوزن. يُنصح بالتشاور مع مقدم الرعاية الصحية للحصول على نصائح شخصية.',
+                    normal: 'ممتاز! لديك وزن صحي. استمر في الحفاظ على نمط حياتك الحالي مع التغذية المتوازنة والنشاط المنتظم.',
+                    overweight: 'قد تستفيد من بعض التغييرات في نمط الحياة. فكر في نظام غذائي متوازن وممارسة الرياضة بانتظام.',
+                    obese: 'يُنصح بالتشاور مع مقدم الرعاية الصحية للحصول على نصائح ودعم شخصي لإدارة الوزن.'
+                },
+                infoText: 'هذه النتيجة تم تعديلها بناءً على العمر والجنس.'
+            },
+            en: {
+                title: 'Body Mass Index (BMI) Calculator',
+                weightLabel: 'Weight (kg)',
+                heightLabel: 'Height (cm)',
+                ageLabel: 'Age (years)',
+                genderLabel: 'Gender (Male/Female)',
+                weightPlaceholder: 'Enter your weight',
+                heightPlaceholder: 'Enter your height',
+                agePlaceholder: 'Enter your age',
+                genderPlaceholder: 'Select your gender',
+                calculateBtn: 'Calculate BMI',
+                langText: 'کوردی سۆرانی',
+                alertText: 'Please fill in all fields with valid numbers',
+                categories: {
+                    underweight: 'Underweight',
+                    normal: 'Healthy Weight',
+                    overweight: 'Overweight',
+                    obese: 'Obese'
+                },
+                descriptions: {
+                    underweight: 'You may need to gain some weight. Consider consulting with a healthcare provider for personalized advice.',
+                    normal: 'Excellent! You have a healthy weight. Keep maintaining your current lifestyle with balanced nutrition and regular activity.',
+                    overweight: 'You may benefit from some lifestyle changes. Consider a balanced diet and regular exercise to reach a healthier weight.',
+                    obese: 'Consider consulting with a healthcare provider for personalized weight management advice and support.'
+                },
+                infoText: 'This result has been adjusted based on age and gender.'
+            }
+        };
+
+        let currentLang = 'ku_badini';
+
+        // Language names for display
+        const languageNames = {
+            ku_badini: 'کوردی بادینی',
+            ku: 'کوردی سۆرانی',
+            ar: 'العربية',
+            en: 'English'
+        };
+
+        // Language dropdown functionality
+        const langSelector = document.getElementById('langSelector');
+        const langDropdown = document.getElementById('langDropdown');
+        const langOptions = document.querySelectorAll('.lang-option');
+
+        langSelector.addEventListener('click', function(e) {
+            e.stopPropagation();
+            langDropdown.classList.toggle('show');
+            langSelector.classList.toggle('open');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function() {
+            langDropdown.classList.remove('show');
+            langSelector.classList.remove('open');
+        });
+
+        // Handle language selection
+        langOptions.forEach(option => {
+            option.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const selectedLang = this.getAttribute('data-lang');
+                if (selectedLang !== currentLang) {
+                    currentLang = selectedLang;
+                    updateLanguage();
+                }
+                langDropdown.classList.remove('show');
+                langSelector.classList.remove('open');
+            });
+        });
+
+        function updateLanguage() {
+            const lang = languages[currentLang];
+            
+            // Update text direction
+            document.body.style.direction = (currentLang === 'ku' || currentLang === 'ku_badini' || currentLang === 'ar') ? 'rtl' : 'ltr';
+            
+            // Update current language display
+            document.getElementById('currentLang').textContent = languageNames[currentLang];
+            
+            // Update active option in dropdown
+            langOptions.forEach(option => {
+                option.classList.remove('active');
+                if (option.getAttribute('data-lang') === currentLang) {
+                    option.classList.add('active');
+                }
+            });
+            
+            // Update all text elements
+            document.getElementById('mainTitle').textContent = lang.title;
+            document.getElementById('weightLabel').textContent = lang.weightLabel;
+            document.getElementById('heightLabel').textContent = lang.heightLabel;
+            document.getElementById('ageLabel').textContent = lang.ageLabel;
+            document.getElementById('genderLabel').textContent = lang.genderLabel;
+            document.getElementById('calculateBtn').textContent = lang.calculateBtn;
+            
+            // Update placeholders
+            document.getElementById('weight').placeholder = lang.weightPlaceholder;
+            document.getElementById('height').placeholder = lang.heightPlaceholder;
+            document.getElementById('age').placeholder = lang.agePlaceholder;
+            document.getElementById('genderPlaceholder').textContent = lang.genderPlaceholder;
+        }
+
+        // Initialize language display
+        updateLanguage();
+
+        // Function to calculate adjusted BMI based on age and gender
+        function calculateAdjustedBMI(weight, height, age, gender) {
+            // Standard BMI calculation
+            const heightInMeters = height / 100;
+            const standardBMI = weight / (heightInMeters * heightInMeters);
+            
+            // Age adjustment factors (based on research showing BMI changes with age)
+            let ageFactor = 1;
+            if (age < 18) {
+                // For children and teens, BMI interpretation is different
+                // Using a simplified adjustment for demonstration
+                ageFactor = 0.95;
+            } else if (age >= 18 && age < 25) {
+                ageFactor = 1.0;
+            } else if (age >= 25 && age < 35) {
+                ageFactor = 1.02;
+            } else if (age >= 35 && age < 45) {
+                ageFactor = 1.05;
+            } else if (age >= 45 && age < 55) {
+                ageFactor = 1.08;
+            } else if (age >= 55 && age < 65) {
+                ageFactor = 1.1;
+            } else {
+                ageFactor = 1.12; // For seniors
+            }
+            
+            // Gender adjustment (women tend to have more body fat at the same BMI)
+            const genderFactor = gender === 'female' ? 0.98 : 1.02;
+            
+            // Calculate adjusted BMI
+            const adjustedBMI = standardBMI * ageFactor * genderFactor;
+            
+            return {
+                standard: standardBMI,
+                adjusted: adjustedBMI,
+                ageFactor: ageFactor,
+                genderFactor: genderFactor
+            };
+        }
+
+        // Function to determine BMI category with adjusted thresholds based on age and gender
+        function getBMICategory(bmi, age, gender) {
+            // Adjust BMI thresholds based on age and gender
+            let underweightThreshold = 18.5;
+            let normalThreshold = 25;
+            let overweightThreshold = 30;
+            
+            // Age adjustments to thresholds
+            if (age < 18) {
+                // Different thresholds for children/teens (simplified)
+                underweightThreshold = 17;
+                normalThreshold = 23;
+                overweightThreshold = 27;
+            } else if (age >= 65) {
+                // Slightly higher thresholds for seniors
+                underweightThreshold = 20;
+                normalThreshold = 27;
+                overweightThreshold = 32;
+            }
+            
+            // Gender adjustments (women can have slightly higher thresholds)
+            if (gender === 'female') {
+                underweightThreshold += 0.5;
+                normalThreshold += 1;
+                overweightThreshold += 1;
+            }
+            
+            // Determine category
+            if (bmi < underweightThreshold) {
+                return 'underweight';
+            } else if (bmi < normalThreshold) {
+                return 'normal';
+            } else if (bmi < overweightThreshold) {
+                return 'overweight';
+            } else {
+                return 'obese';
+            }
+        }
+
+        document.getElementById('bmiForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const age = parseInt(document.getElementById('age').value);
+            const gender = document.getElementById('gender').value;
+            
+            if (!weight || !height || !age || !gender) {
+                alert(languages[currentLang].alertText);
+                return;
+            }
+            
+            // Calculate adjusted BMI
+            const bmiResult = calculateAdjustedBMI(weight, height, age, gender);
+            const adjustedBMI = bmiResult.adjusted;
+            
+            // Determine category based on adjusted BMI and personal factors
+            const category = getBMICategory(adjustedBMI, age, gender);
+            
+            // Get language-specific content
+            const lang = languages[currentLang];
+            
+            let description, categoryClass, icon;
+            
+            switch(category) {
+                case 'underweight':
+                    categoryClass = 'underweight';
+                    icon = '📏';
+                    description = lang.descriptions.underweight;
+                    break;
+                case 'normal':
+                    categoryClass = 'normal';
+                    icon = '✅';
+                    description = lang.descriptions.normal;
+                    break;
+                case 'overweight':
+                    categoryClass = 'overweight';
+                    icon = '⚠️';
+                    description = lang.descriptions.overweight;
+                    break;
+                case 'obese':
+                    categoryClass = 'obese';
+                    icon = '🏥';
+                    description = lang.descriptions.obese;
+                    break;
+            }
+            
+            // Display results
+            document.getElementById('bmiIcon').textContent = icon;
+            document.getElementById('bmiValue').textContent = adjustedBMI.toFixed(1);
+            document.getElementById('bmiCategory').textContent = lang.categories[category];
+            document.getElementById('bmiCategory').className = `bmi-category ${categoryClass}`;
+            document.getElementById('bmiDescription').textContent = description;
+            document.getElementById('infoNote').textContent = lang.infoText;
+            
+            // Update category card styling
+            const categoryCard = document.getElementById('categoryCard');
+            categoryCard.className = `bmi-category-card ${categoryClass}`;
+            
+            document.getElementById('result').style.display = 'block';
+            
+            // Scroll to results on mobile
+            document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+        });
+    </script>
+    <script>
+/*
+ * Auto-normalize Kurdish/Arabic-Indic and Persian/Eastern Arabic-Indic digits
+ * to Western digits for weight / height / age fields.
+ *
+ * - Paste this before </body>
+ * - It will automatically find inputs by id/name/class/placeholder/label text
+ *   that look like weight, height, or age (English + common Arabic words).
+ * - Supports digits:
+ *    Arabic-Indic: \u0660..\u0669  (٠١٢٣٤٥٦٧٨٩)
+ *    Eastern Arabic-Indic (Persian): \u06F0..\u06F9 (۰۱۲۳۴۵۶۷۸۹)
+ * - Converts Arabic decimal '٫' (U+066B) to '.' and removes Arabic thousands '٬' (U+066C).
+ * - Normalizes on input, paste, and before form submit.
+ */
+
+(function () {
+  // mapping for digits and some separators
+  const digitMap = {
+    '\u0660':'0','\u0661':'1','\u0662':'2','\u0663':'3','\u0664':'4',
+    '\u0665':'5','\u0666':'6','\u0667':'7','\u0668':'8','\u0669':'9',
+    '\u06F0':'0','\u06F1':'1','\u06F2':'2','\u06F3':'3','\u06F4':'4',
+    '\u06F5':'5','\u06F6':'6','\u06F7':'7','\u06F8':'8','\u06F9':'9',
+    // decimal/thousand separators
+    '\u066B':'.', // ARABIC DECIMAL SEPARATOR → .
+    '\u066C':'',  // ARABIC THOUSANDS SEPARATOR → remove
+    '\u066A':'-', // Arabic percent-like sign uncommon, map dash if appears (optional)
+  };
+
+  // regex that matches any supported characters to replace
+  const replaceRegex = /[\u0660-\u0669\u06F0-\u06F9\u066B\u066C\u066A]/g;
+
+  function normalizeDigits(str) {
+    if (!str) return str;
+    return str.replace(replaceRegex, ch => digitMap[ch] !== undefined ? digitMap[ch] : ch);
+  }
+
+  // Heuristics to find relevant inputs (weight, height, age)
+  const keywordRegex = /\b(weight|kg|kilo|height|cm|age|year|years|الوزن|وزن|كيلو|كيلوغرام|الطول|طول|سم|العمر|سن)\b/i;
+
+  // Collect candidate inputs
+  const inputs = Array.from(document.querySelectorAll('input, textarea'));
+
+  function getLabelTextForInput(input) {
+    // try label[for]
+    try {
+      if (input.id) {
+        const lbl = document.querySelector('label[for="' + CSS.escape(input.id) + '"]');
+        if (lbl && lbl.textContent) return lbl.textContent;
+      }
+    } catch (e) {}
+    // try ancestor label
+    let anc = input.closest('label');
+    if (anc && anc.textContent) return anc.textContent;
+    // try previous sibling text
+    const prev = input.previousElementSibling;
+    if (prev && prev.textContent) return prev.textContent;
+    // try parent text
+    if (input.parentElement && input.parentElement.textContent) return input.parentElement.textContent;
+    return '';
+  }
+
+  function looksLikeTargetField(input) {
+    if (!input) return false;
+    const id = (input.id || '').toString();
+    const name = (input.name || '').toString();
+    const cls = (input.className || '').toString();
+    const placeholder = (input.getAttribute('placeholder') || '').toString();
+    const aria = (input.getAttribute('aria-label') || '').toString();
+    const labelText = getLabelTextForInput(input);
+    const all = (id + ' ' + name + ' ' + cls + ' ' + placeholder + ' ' + aria + ' ' + labelText).toLowerCase();
+    return keywordRegex.test(all);
+  }
+
+  // Find matching inputs
+  const matched = inputs.filter(looksLikeTargetField);
+
+  // If none matched, as a fallback try common IDs/classes/names
+  const fallbackSelectors = [
+    '#weight', '#height', '#age',
+    '[name="weight"]','[name="height"]','[name="age"]',
+    '.weight', '.height', '.age'
+  ];
+  if (matched.length === 0) {
+    fallbackSelectors.forEach(sel => {
+      try {
+        const el = document.querySelector(sel);
+        if (el && !matched.includes(el)) matched.push(el);
+      } catch (e) {}
+    });
+  }
+
+  if (matched.length === 0) {
+    // As a final fallback, scan for small numeric-looking inputs (max length 5-6)
+    inputs.forEach(inp => {
+      const maxlen = parseInt(inp.getAttribute('maxlength') || '0', 10) || 0;
+      if ((inp.type === 'text' || inp.type === 'tel' || inp.type === 'number' || inp.type === 'search') &&
+          (!maxlen || maxlen <= 6) && /\d/.test(inp.value || '')) {
+        matched.push(inp);
+      }
+    });
+  }
+
+  // Deduplicate
+  const fields = Array.from(new Set(matched)).filter(Boolean);
+
+  // Attach handlers to each found field
+  fields.forEach(input => {
+    // Encourage numeric keyboard on mobile and allow non-western digits
+    try { input.setAttribute('inputmode', 'numeric'); } catch (e) {}
+    try { input.setAttribute('autocomplete', 'off'); } catch (e) {}
+
+    // live input normalization
+    input.addEventListener('input', (e) => {
+      const el = e.target;
+      const before = el.selectionStart;
+      const newVal = normalizeDigits(el.value);
+      if (newVal !== el.value) {
+        el.value = newVal;
+        // try to restore caret (replacements are typically same-length or very close)
+        try { el.setSelectionRange(before, before); } catch (err) {}
+      }
+    });
+
+    // handle pasted text (insert normalized text)
+    input.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const paste = (e.clipboardData || window.clipboardData).getData('text') || '';
+      const normalized = normalizeDigits(paste);
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const beforeText = input.value.slice(0, start);
+      const afterText = input.value.slice(end);
+      input.value = beforeText + normalized + afterText;
+      const pos = start + normalized.length;
+      try { input.setSelectionRange(pos, pos); } catch (err) {}
+      // trigger input event manually so other listeners update
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    // Optional: prevent entering characters other than digits, dot, dash (soft enforcement)
+    input.addEventListener('keypress', (e) => {
+      // allow navigation keys, control keys
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const ch = e.key;
+      // allow digits (western), decimal dot, and backspace handled by keypress behavior
+      // we still allow other keys because user may paste non-Western digits which we normalize
+      // so this is a gentle client-side restriction:
+      if (!/[\d\.\-]/.test(ch) && !/[\u0660-\u0669\u06F0-\u06F9]/.test(ch)) {
+        // allow Enter and Tab and others not to be blocked
+        if (e.key.length === 1) e.preventDefault();
+      }
+    });
+  });
+
+  // Normalize before any form submit for safety
+  const forms = new Set();
+  fields.forEach(f => {
+    const form = f.closest('form');
+    if (form) forms.add(form);
+  });
+  forms.forEach(form => {
+    form.addEventListener('submit', () => {
+      fields.forEach(f => {
+        // only normalize inputs contained in this form
+        if (form.contains(f)) {
+          f.value = normalizeDigits(f.value);
+        }
+      });
+    });
+  });
+
+  // If there are no detected fields, add a friendly console hint
+  if (fields.length === 0) {
+    console.info('[digit-normalizer] No weight/height/age fields detected automatically. If your fields use custom wording, ensure labels or placeholders include words like "weight", "height", "age" (or Arabic equivalents: "وزن", "طول", "عمر").');
+  } else {
+    console.info('[digit-normalizer] Normalizer attached to fields:', fields);
+  }
+
+  // expose a global utility in case you want to run manually
+  window.__normalizeArabicDigits = normalizeDigits;
+})();
+</script>
+
+</body>
+</html>
